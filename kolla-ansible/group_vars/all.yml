@@ -1,0 +1,63 @@
+---
+# The options in this file can be overridden in 'globals.yml'
+
+# Valid options are [ COPY_ONCE, COPY_ALWAYS ]
+config_strategy: "COPY_ONCE"
+
+# Valid options are [ centos, fedora, oraclelinux, ubuntu ]
+kolla_base_distro: "ubuntu"
+# Valid options are [ binary, source ]
+kolla_install_type: "source"
+
+# Value set in the public_url endpoint in Keystone
+kolla_internal_address: "{{ ansible_ssh_host }}"
+kolla_external_address: "{{ kolla_internal_address }}"
+
+database_address: "{{ kolla_internal_address }}"
+database_user: "root"
+
+docker_registry: "127.0.0.1:4000"
+docker_namespace: "kollaglue"
+docker_insecure_registry: "True"
+
+# Valid options are [ missing, always ]
+docker_pull_policy: "missing"
+
+# Valid options are [ no, on-failure, always ]
+docker_restart_policy: "always"
+
+network_interface: "eth0"
+api_interface: "{{ network_interface }}"
+storage_interface: "{{ network_interface }}"
+tunnel_interface: "{{ network_interface }}"
+neutron_external_interface: "eth1"
+
+# Valid options are [ openvswitch, linuxbridge ]
+neutron_plugin_agent: "openvswitch"
+
+#openstack_release: "1.0.0-liberty"
+openstack_release: "latest"
+openstack_logging_verbose: "True"
+openstack_logging_debug: "False"
+openstack_region_name: "RegionOne"
+
+# These roles are required for Kolla to be operation, however a savvy deployer
+# could disable some of these required roles and run thier own services.
+enable_glance: "yes"
+enable_haproxy: "no"
+enable_keystone: "yes"
+enable_memcached: "yes"
+enable_mariadb: "yes"
+enable_neutron: "yes"
+enable_nova: "yes"
+enable_rabbitmq: "yes"
+
+# Additional optional OpenStack services are specified here
+enable_ceph: "no"
+enable_cinder: "no"
+enable_heat: "yes"
+enable_horizon: "yes"
+enable_swift: "no"
+enable_murano: "no"
+enable_ironic: "no"
+

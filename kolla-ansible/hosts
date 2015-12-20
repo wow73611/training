@@ -1,0 +1,5 @@
+[all]
+kolla ansible_ssh_host=192.168.123.136 ansible_ssh_port=22 
+
+# Install kolla on localhost
+#localhost       ansible_connection=local

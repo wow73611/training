@@ -1,0 +1,72 @@
+---
+- hosts: all
+  tasks:
+    - name: Update apt-get cache
+      apt: upgrade=dist update_cache=yes
+
+    - name: Install dependencies for OpenStack
+      apt: name={{item}} state=present
+      with_items:
+        - linux-image-generic-lts-trusty
+        - git
+        - curl
+        - python-dev
+        - python-pip
+        - libffi-dev
+        - libssl-dev
+        - gcc
+        - ansible
+
+#    - name: Install pip for python
+#      shell: curl -O https://bootstrap.pypa.io/get-pip.py | python | hash -r
+
+    - name: Download docker
+      shell: curl -sSL https://get.docker.io | bash
+
+    - name: Install docker package
+      apt: name=docker-engine=1.8.2-0~trusty state=present force=yes
+
+    - name: Upgrade pip
+      shell: pip install -U pip | hash -r
+
+    - name: Download openstack/kolla source code
+      git: repo=https://git.openstack.org/openstack/kolla version=stable/liberty dest=/root/kolla
+
+    - name: Install python-openstackclient with pip
+      pip: name={{item}} state=present extra_args='--upgrade'
+      with_items:
+        - python-openstackclient
+        - ansible
+
+    - name: Install kolla requirements with pip
+      shell: pip install /root/kolla/
+      #pip: requirements=/root/kolla/requirements.txt
+
+    - name: Copy configuration of kolla
+      command: cp -r kolla/etc/kolla /etc/
+
+    - name: Upgrade docker-py with pip
+      pip: name=docker-py version=1.5
+
+    - name: Run Docker Registry
+      docker:
+        name: registry
+        image: registry
+        state: started
+        restart_policy: "always"
+        ports:
+          - "4000:5000"
+
+    - name: Copy kolla-build.conf
+      copy: src=config/kolla-build.conf dest=/etc/kolla/kolla-build.conf
+
+    - name: Copy globals.yml
+      template: src=config/globals.yml.j2 dest=/etc/kolla/globals.yml
+
+    - name: Build docker images
+      shell: cd /root/kolla/tools/;./build.py --base ubuntu --type source --registry 127.0.0.1:4000 --push --no-cache
+      tags: build
+
+    - name: Doploy all-in-one openstack
+      shell: cd /root/kolla/ansible/;ansible-playbook -i inventory/all-in-one -e @/etc/kolla/globals.yml -e @/etc/kolla/passwords.yml site.yml
+      tags: start
