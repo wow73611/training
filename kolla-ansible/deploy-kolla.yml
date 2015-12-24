@@ -30,7 +30,7 @@
       shell: pip install -U pip | hash -r
 
     - name: Download openstack/kolla source code
-      git: repo=https://git.openstack.org/openstack/kolla version=stable/liberty dest=/root/kolla
+      git: repo=https://git.openstack.org/openstack/kolla version=stable/kilo dest=/root/kolla
 
     - name: Install python-openstackclient with pip
       pip: name={{item}} state=present extra_args='--upgrade'
@@ -39,14 +39,17 @@
         - ansible
 
     - name: Install kolla requirements with pip
-      shell: pip install /root/kolla/
-      #pip: requirements=/root/kolla/requirements.txt
+      #shell: pip install /root/kolla/
+      pip: requirements=/root/kolla/requirements.txt
 
     - name: Copy configuration of kolla
       command: cp -r kolla/etc/kolla /etc/
 
     - name: Upgrade docker-py with pip
       pip: name=docker-py version=1.5
+
+    - name: Copy Docker config
+      copy: src=config/docker dest=/etc/default/docker
 
     - name: Run Docker Registry
       docker:
@@ -62,6 +65,9 @@
 
     - name: Copy globals.yml
       template: src=config/globals.yml.j2 dest=/etc/kolla/globals.yml
+
+    - name: Fix ironic-pxe bug
+      copy: src=config/ironic-pxe-Dockerfile.j2 dest=/root/kolla/docker/ironic/ironic-pxe/Dockerfile.j2
 
     - name: Build docker images
       shell: cd /root/kolla/tools/;./build.py --base ubuntu --type source --registry 127.0.0.1:4000 --push --no-cache

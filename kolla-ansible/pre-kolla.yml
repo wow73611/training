@@ -1,0 +1,39 @@
+---
+- hosts: all
+  tasks:
+    - name: Update apt-get cache
+      apt: upgrade=dist update_cache=yes
+
+    - name: Install dependencies for OpenStack
+      apt: name={{item}} state=present
+      with_items:
+        - linux-image-generic-lts-trusty
+        - git
+        - curl
+        - python-dev
+        - python-pip
+        - libffi-dev
+        - libssl-dev
+        - gcc
+        - ansible
+
+    - name: Download docker
+      shell: curl -sSL https://get.docker.io | bash
+
+    - name: Install docker package
+      apt: name=docker-engine=1.8.2-0~trusty state=present force=yes
+
+    - name: Upgrade pip
+      shell: pip install -U pip | hash -r
+
+    - name: Install python-openstackclient with pip
+      pip: name={{item}} state=present extra_args='--upgrade'
+      with_items:
+        - python-openstackclient
+        - ansible
+
+    - name: Upgrade docker-py with pip
+      pip: name=docker-py version=1.5
+
+    - name: Copy Docker config
+      copy: src=config/docker dest=/etc/default/docker
