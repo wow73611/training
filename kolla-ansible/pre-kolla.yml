@@ -17,6 +17,9 @@
         - gcc
         - ansible
 
+#    - name: Install pip for python
+#      shell: curl -O https://bootstrap.pypa.io/get-pip.py | python | hash -r
+
     - name: Download docker
       shell: curl -sSL https://get.docker.io | bash
 
@@ -37,3 +40,7 @@
 
     - name: Copy Docker config
       copy: src=config/docker dest=/etc/default/docker
+      tags: test
+
+    - name: Restart docker
+      service: name=docker state=restarted

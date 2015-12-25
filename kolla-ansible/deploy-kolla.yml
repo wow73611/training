@@ -29,14 +29,14 @@
     - name: Upgrade pip
       shell: pip install -U pip | hash -r
 
-    - name: Download openstack/kolla source code
-      git: repo=https://git.openstack.org/openstack/kolla version=stable/kilo dest=/root/kolla
-
     - name: Install python-openstackclient with pip
       pip: name={{item}} state=present extra_args='--upgrade'
       with_items:
         - python-openstackclient
         - ansible
+
+    - name: Download openstack/kolla source code
+      git: repo=https://git.openstack.org/openstack/kolla version=stable/liberty dest=/root/kolla
 
     - name: Install kolla requirements with pip
       #shell: pip install /root/kolla/
@@ -50,6 +50,9 @@
 
     - name: Copy Docker config
       copy: src=config/docker dest=/etc/default/docker
+
+    - name: Restart docker
+      service: name=docker state=restarted
 
     - name: Run Docker Registry
       docker:
@@ -75,4 +78,4 @@
 
     - name: Doploy all-in-one openstack
       shell: cd /root/kolla/ansible/;ansible-playbook -i inventory/all-in-one -e @/etc/kolla/globals.yml -e @/etc/kolla/passwords.yml site.yml
-      tags: start
+      tags: deploy
