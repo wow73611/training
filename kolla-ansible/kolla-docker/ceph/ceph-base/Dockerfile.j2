@@ -1,0 +1,24 @@
+FROM {{ namespace }}/{{ image_prefix }}base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        ceph \
+        parted \
+        hdparm \
+    && yum clean all
+
+{% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        ceph \
+        parted \
+        hdparm \
+    && apt-get clean
+
+{% endif %}
+
+RUN useradd --user-group ceph \
+    && mkdir -p /home/ceph \
+    && chown -R ceph: /home/ceph

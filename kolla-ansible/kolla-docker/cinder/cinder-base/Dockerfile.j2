@@ -1,0 +1,39 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install openstack-cinder \
+    python-automaton \
+    lvm2 \
+    ceph-common \
+  && yum clean all \
+  && mkdir -p /etc/ceph
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install lvm2 \
+   && yum clean all
+
+     {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        lvm2 \
+        ceph-common \
+    && apt-get clean \
+    && mkdir -p /etc/ceph
+
+    {% endif %}
+
+ADD cinder-base-archive /cinder-base-source
+RUN ln -s cinder-base-source/* cinder \
+    && useradd --user-group cinder \
+    && pip --no-cache-dir install -c requirements/upper-constraints.txt /cinder \
+    && mkdir -p /etc/cinder /var/log/cinder /home/cinder \
+    && cp -r /cinder/etc/cinder/* /etc/cinder/ \
+    && chown -R cinder: /etc/cinder /var/log/cinder /home/cinder
+
+{% endif %}

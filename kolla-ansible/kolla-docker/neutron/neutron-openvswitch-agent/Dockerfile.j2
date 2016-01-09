@@ -1,0 +1,24 @@
+FROM {{ namespace }}/{{ image_prefix }}neutron-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net.kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+# Install required packages
+RUN yum install -y \
+        openstack-neutron-openvswitch \
+        openvswitch \
+    && yum clean all
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+# Install required packages
+RUN yum install -y openvswitch \
+    && yum clean all
+
+    {% endif %}
+{% endif %}
+
+{{ include_footer }}

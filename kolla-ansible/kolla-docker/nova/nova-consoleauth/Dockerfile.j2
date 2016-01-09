@@ -1,0 +1,13 @@
+FROM {{ namespace }}/{{ image_prefix }}nova-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install openstack-nova-console \
+    && yum clean all
+
+    {% endif %}
+{% endif %}
+
+{{ include_footer }}

@@ -1,0 +1,28 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+# TODO(SamYaple): until packaging is fixed, all of this is required
+# http://pkgs.fedoraproject.org/cgit/openstack-ironic.git/tree/openstack-ironic.spec#n78
+RUN yum -y install \
+        openstack-ironic-common \
+        python-oslo-log \
+        python-oslo-concurrency \
+        python-oslo-policy \
+        python-oslo-versionedobjects \
+    && yum clean all
+
+    {% endif %}
+{% elif install_type == 'source' %}
+
+ADD ironic-base-archive /ironic-base-source
+RUN ln -s ironic-base-source/* ironic \
+    && useradd --user-group ironic \
+    && pip --no-cache-dir install -c requirements/upper-constraints.txt /ironic \
+    && mkdir -p /etc/ironic /var/log/ironic /home/ironic \
+    && cp -r /ironic/etc/* /etc/ironic/ \
+    && chown -R ironic: /etc/ironic /var/log/ironic /home/ironic
+
+{% endif %}
