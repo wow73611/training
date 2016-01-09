@@ -3,6 +3,7 @@
   tasks:
     - name: Update apt-get cache
       apt: upgrade=dist update_cache=yes
+      tags: install
 
     - name: Install dependencies for OpenStack
       apt: name={{item}} state=present
@@ -16,43 +17,54 @@
         - libssl-dev
         - gcc
         - ansible
+      tags: install
 
 #    - name: Install pip for python
 #      shell: curl -O https://bootstrap.pypa.io/get-pip.py | python | hash -r
 
     - name: Download docker
       shell: curl -sSL https://get.docker.io | bash
+      tags: install
 
     - name: Install docker package
       apt: name=docker-engine=1.8.2-0~trusty state=present force=yes
+      tags: install
 
     - name: Upgrade pip
       shell: pip install -U pip | hash -r
+      tags: install
 
     - name: Install python-openstackclient with pip
       pip: name={{item}} state=present extra_args='--upgrade'
       with_items:
         - python-openstackclient
         - ansible
+      tags: install
 
     - name: Download openstack/kolla source code
       git: repo=https://git.openstack.org/openstack/kolla version=stable/liberty dest=/root/kolla
+      tags: install
+
+    - name: Copy Docker config
+      copy: src=config/docker dest=/etc/default/docker
+      tags: install
+
+    - name: Restart docker
+      service: name=docker state=restarted
+      tags: install
 
     - name: Install kolla requirements with pip
       #shell: pip install /root/kolla/
       pip: requirements=/root/kolla/requirements.txt
+      tags: init
 
     - name: Copy configuration of kolla
       command: cp -r kolla/etc/kolla /etc/
+      tags: init
 
     - name: Upgrade docker-py with pip
       pip: name=docker-py version=1.5
-
-    - name: Copy Docker config
-      copy: src=config/docker dest=/etc/default/docker
-
-    - name: Restart docker
-      service: name=docker state=restarted
+      tags: init
 
     - name: Run Docker Registry
       docker:
@@ -62,15 +74,19 @@
         restart_policy: "always"
         ports:
           - "4000:5000"
+      tags: init
 
     - name: Copy kolla-build.conf
       copy: src=config/kolla-build.conf dest=/etc/kolla/kolla-build.conf
+      tags: init
 
     - name: Copy globals.yml
-      template: src=config/globals.yml.j2 dest=/etc/kolla/globals.yml
+      template: src=config/globals.yml.j2 dest=/etc/kolla/globals.yml force=yes
+      tags: init
 
     - name: Fix ironic-pxe bug
       copy: src=config/ironic-pxe-Dockerfile.j2 dest=/root/kolla/docker/ironic/ironic-pxe/Dockerfile.j2
+      tags: init
 
     - name: Build docker images
       shell: cd /root/kolla/tools/;./build.py --base ubuntu --type source --registry 127.0.0.1:4000 --push --no-cache
