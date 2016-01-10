@@ -1,0 +1,45 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        openstack-glance \
+        python-oslo-i18n \
+        python-castellan \
+        python-cryptography \
+        python-rbd \
+        python-rados \
+    && yum clean all \
+    && mkdir -p /etc/ceph/
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        python-rbd \
+        python-rados \
+    && yum clean all \
+    && mkdir -p /etc/ceph/
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        python-rbd \
+        python-rados \
+    && apt-get clean \
+    && mkdir -p /etc/ceph/
+
+    {% endif %}
+
+ADD glance-base-archive /glance-base-source
+RUN ln -s glance-base-source/* glance \
+    && useradd --user-group glance \
+    && pip --no-cache-dir install -c requirements/upper-constraints.txt /glance \
+    && mkdir -p /etc/glance /var/log/glance /home/glance \
+    && cp -r /glance/etc/* /etc/glance/ \
+    && chown -R glance: /etc/glance /var/log/glance /home/glance
+
+{% endif %}

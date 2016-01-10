@@ -1,0 +1,53 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net.kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        openstack-neutron \
+        openstack-neutron-ml2 \
+        openvswitch \
+    && yum clean all
+
+# TODO (sdake): remove once RDO adds to the openstack-neutron package
+RUN pip install oslo.versionedobjects
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        uuid \
+        dnsmasq \
+        ipset \
+        openvswitch \
+    && yum clean all
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        iptables \
+        dnsmasq \
+        uuid-runtime \
+        ipset \
+        openvswitch-switch \
+    && apt-get clean
+
+    {% endif %}
+
+ADD neutron-base-archive /neutron-base-source
+RUN ln -s neutron-base-source/* neutron \
+    && useradd --user-group neutron \
+    && pip --no-cache-dir install /neutron \
+    && mkdir -p /etc/neutron /usr/share/neutron /var/log/neutron /home/neutron \
+    && cp -r /neutron/etc/* /etc/neutron/ \
+    && cp -r /neutron/etc/neutron/* /etc/neutron/ \
+    && cp /neutron/etc/api-paste.ini /usr/share/neutron \
+    && mv /etc/neutron/neutron/ /etc/neutron/plugins/ \
+    && chown -R neutron: /etc/neutron /usr/share/neutron /var/log/neutron /home/neutron
+
+{% endif %}
+
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+RUN chmod 755 /usr/local/bin/kolla_extend_start

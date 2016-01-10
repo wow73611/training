@@ -1,0 +1,62 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net.kolla)
+
+{% if install_type == 'binary' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        openstack-dashboard \
+        httpd \
+        mod_wsgi \
+    && yum clean all \
+    && chown -R apache: /usr/share/openstack-dashboard/static \
+    && useradd --user-group horizon \
+    && sed -i -r 's,^(Listen 80),#\1,' /etc/httpd/conf/httpd.conf \
+    && ln -s /usr/share/openstack-dashboard/openstack_dashboard /usr/lib/python2.7/site-packages/openstack_dashboard \
+    && ln -s /usr/share/openstack-dashboard/static /usr/lib/python2.7/site-packages/static \
+    && chown -R horizon: /etc/openstack-dashboard
+
+RUN sed -i "s|WEBROOT = '/dashboard/'|WEBROOT = '/'|" /etc/openstack-dashboard/local_settings \
+    && cp /usr/share/openstack-dashboard/manage.py /usr/bin/manage.py \
+    && /usr/bin/python /usr/bin/manage.py collectstatic --noinput --clear \
+    && /usr/bin/python /usr/bin/manage.py compress --force
+
+    {% endif %}
+{% elif install_type == 'source' %}
+    {% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum install -y \
+        httpd \
+        mod_wsgi \
+    && yum clean all \
+    && sed -i -r 's,^(Listen 80),#\1,' /etc/httpd/conf/httpd.conf
+
+    {% elif base_distro in ['ubuntu', 'debian'] %}
+
+RUN apt-get install -y --no-install-recommends \
+        apache2 \
+        libapache2-mod-wsgi \
+    && echo > /etc/apache2/ports.conf \
+    && apt-get clean
+
+    {% endif %}
+
+ADD horizon-archive /horizon-source
+RUN ln -s horizon-source/* horizon \
+    && pip --no-cache-dir install -c requirements/upper-constraints.txt /horizon \
+    && useradd --user-group horizon \
+    && mkdir -p /etc/openstack-dashboard /home/horizon \
+    && ln -s /etc/openstack-dashboard/local_settings /usr/lib/python2.7/site-packages/openstack_dashboard/local/local_settings.py \
+    && cp -r /horizon/openstack_dashboard/conf/* /etc/openstack-dashboard/ \
+    && cp /horizon/openstack_dashboard/local/local_settings.py.example /etc/openstack-dashboard/local_settings \
+    && cp /horizon/manage.py /usr/bin/manage.py \
+    && /usr/bin/python /usr/bin/manage.py collectstatic --noinput --clear \
+    && /usr/bin/python /usr/bin/manage.py compress --force \
+    && chown -R horizon: /etc/openstack-dashboard /home/horizon /usr/lib/python2.7/site-packages/static
+
+{% endif %}
+
+COPY extend_start.sh /usr/local/bin/kolla_extend_start
+RUN chmod 755 /usr/local/bin/kolla_extend_start
+
+{{ include_footer }}

@@ -1,0 +1,35 @@
+FROM {{ namespace }}/{{ image_prefix }}openstack-base:{{ tag }}
+MAINTAINER Kolla Project (https://launchpad.net/kolla)
+
+{% if base_distro in ['centos', 'fedora', 'oraclelinux', 'rhel'] %}
+
+RUN yum -y install \
+        gcc \
+        libffi-devel \
+        libxml2-devel \
+        libxslt-devel \
+        openssl-devel \
+        python-devel \
+        openssh-clients \
+    && yum clean all
+
+RUN pip install -U pip wheel
+
+{% endif %}
+
+RUN pip --no-cache-dir install \
+        shade \
+        pyudev
+
+RUN git clone --depth 1 -b v2.0.0-0.2.alpha2 https://github.com/ansible/ansible.git \
+    && cd ansible \
+    && git submodule update --init --recursive \
+    && pip --no-cache-dir install .
+
+RUN mkdir -p /etc/ansible /usr/share/ansible \
+    && echo 'localhost ansible_connection=local' > /etc/ansible/hosts
+
+COPY kolla_keystone_service.py kolla_keystone_user.py /usr/share/ansible/
+COPY find_disks.py kolla_keystone_service.py kolla_keystone_user.py /usr/share/ansible/
+
+{{ include_footer }}
