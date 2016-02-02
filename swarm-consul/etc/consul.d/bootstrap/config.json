@@ -1,0 +1,11 @@
+{
+  "bootstrap": true,
+  "server": true,
+  "datacenter": "dc1",
+  "data_dir": "/var/consul",
+  "encrypt": "akYn4OsYInbzX98w+y0lyA==",
+  "enable_syslog": true,
+  "log_level": "debug",
+  "client_addr": "192.168.123.13",
+  "bind_addr": "0.0.0.0"
+}

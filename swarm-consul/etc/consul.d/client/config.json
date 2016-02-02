@@ -1,0 +1,14 @@
+{
+  "server": false,
+  "datacenter": "dc1",
+  "data_dir": "/var/consul",
+  "ui_dir": "/home/consul/dist",
+  "encrypt": "akYn4OsYInbzX98w+y0lyA==",
+  "log_level": "INFO",
+  "enable_syslog": true,
+  "start_join": ["192.168.123.13", "192.168.123.14", "192.168.123.15"],
+  "rejoin_after_leave": true,
+  "log_level": "debug",
+  "client_addr": "0.0.0.0",
+  "bind_addr": "0.0.0.0"
+}
